@@ -1,0 +1,42 @@
+[Unit]
+Description=Conservative Oracle and Cloudflare DNS failover
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=oracle-edge
+Group=oracle-edge
+StateDirectory=oracle-edge
+StateDirectoryMode=0700
+UMask=0077
+LoadCredential=cf_token:/etc/oracle-edge/cf-token
+ExecStart=/usr/bin/python3 -I /usr/local/lib/oracle-edge/watchdog.py --config /etc/oracle-edge/watchdog.json --run --apply
+Restart=on-failure
+RestartPreventExitStatus=2
+RestartSec=15
+TimeoutStopSec=35
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+TasksMax=32
+MemoryMax=256M
+LimitNOFILE=256
+
+[Install]
+WantedBy=multi-user.target

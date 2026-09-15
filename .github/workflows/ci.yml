@@ -1,0 +1,49 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Regression tests without network or credentials
+        run: python -m unittest discover -s tests -v
+      - name: Shell syntax
+        run: |
+          for script in setup-oracle.sh setup-home.sh install-firewall.sh preflight-oracle.sh; do
+            bash -n "$script"
+          done
+
+  haproxy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install configuration validator
+        run: |
+          sudo apt-get update
+          sudo apt-get --no-remove install -y haproxy
+      - name: Parse fixture configuration without starting the relay
+        run: |
+          python3 configure-oracle.py --domain example.com --home-ip 8.8.8.8
+          sudo haproxy -c -f runtime/haproxy.cfg
+      - name: Verify generated files remain ignored
+        run: git check-ignore runtime/haproxy.cfg

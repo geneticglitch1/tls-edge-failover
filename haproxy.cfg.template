@@ -1,0 +1,50 @@
+# Template for a dedicated Ubuntu 24.04 relay. Render with configure-oracle.py.
+# No TLS termination, certificates, PROXY protocol, or personal proxy on Oracle.
+global
+    log /dev/log local0
+    user haproxy
+    group haproxy
+    daemon
+    maxconn 2048
+    maxconnrate 400
+    stats socket /run/haproxy/admin.sock mode 600 level admin
+    stats timeout 10s
+    # Reloads drain old connections for at most 10 minutes, then cut them.
+    hard-stop-after 10m
+
+defaults
+    log global
+    mode tcp
+    option tcplog
+    option dontlognull
+    timeout connect 5s
+    timeout client 5m
+    timeout server 5m
+    timeout client-fin 15s
+    timeout server-fin 15s
+    timeout check 5s
+    timeout queue 5s
+
+frontend home_https
+    bind 0.0.0.0:443
+    maxconn 2048
+    backlog 2048
+    stick-table type ip size 100k expire 30s store conn_cur,conn_rate(1s)
+    tcp-request connection track-sc0 src
+    tcp-request connection reject if { sc0_conn_cur gt 100 }
+    tcp-request connection reject if { sc0_conn_rate gt 30 }
+
+    # Wait at most 5s for an ordinary TLS ClientHello for an allowed SNI.
+    # This is routing hygiene, not user authentication or HTTP filtering.
+    tcp-request inspect-delay 5s
+    acl hello req.ssl_hello_type 1
+    acl allowed_sni req.ssl_sni -m reg -i ^([a-z0-9-]+\.)*@@DOMAIN_REGEX@@$
+    tcp-request content reject if hello !allowed_sni
+    tcp-request content accept if hello allowed_sni
+    tcp-request content reject if WAIT_END
+    default_backend home_npm
+
+backend home_npm
+    # TCP checks only. The home watchdog verifies HTTPS and the response body.
+    # Fixed current home IPv4. Update this if your ISP changes the address.
+    server home @@HOME_IPV4@@:443 check inter 5s fall 3 rise 2

@@ -1,0 +1,27 @@
+{
+  "zone_id": "REPLACE_WITH_ZONE_ID",
+  "oracle_ip": "REPLACE_WITH_ORACLE_PUBLIC_IPV4",
+  "home_ip": "REPLACE_WITH_HOME_PUBLIC_IPV4",
+  "canary": {
+    "id": "REPLACE_WITH_CANARY_A_RECORD_ID",
+    "name": "edge-health.example.com"
+  },
+  "apps": [
+    {"id": "REPLACE_WITH_WILDCARD_A_RECORD_ID", "name": "*.example.com"},
+    {"id": "REPLACE_WITH_APEX_A_RECORD_ID", "name": "example.com"}
+  ],
+  "health": {
+    "primary_host": "edge-health.example.com",
+    "local_ip": "REPLACE_WITH_NPM_LAN_IPV4",
+    "path": "/__edge_health",
+    "expected_body": "edge-ok-v1\n",
+    "timeout_seconds": 5
+  },
+  "token_file": "/ABSOLUTE/INSTALL/PATH/runtime/cf-token",
+  "state_file": "/ABSOLUTE/INSTALL/PATH/runtime/state.json",
+  "interval_seconds": 15,
+  "failures_required": 4,
+  "recovery_seconds": 300,
+  "minimum_dwell_seconds": 600,
+  "api_timeout_seconds": 10
+}
